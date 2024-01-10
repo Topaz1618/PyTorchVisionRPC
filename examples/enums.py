@@ -38,18 +38,6 @@ class TrainModelType(Enum):
     PADDLEOCR = "PaddleOCR"
 
 
-class MaterialType(Enum):
-    ID_CARD = "身份证"
-    LAND_MAP = "宗地图"
-    HOUSEHOLD_REGISTER = "户口本"
-    HOUSE_FLOOR_PLAN = "房屋平面图"
-    REAL_ESTATE_APPLICATION = "不动产申请表"
-    UNKNOWN = "Unknown"
-
-    def get_text_format(self):
-        return self.name
-
-
 class MaterialContentType(Enum):
     ID_CARD = "居民身份证"
     LAND_MAP = "宗地图"
@@ -57,6 +45,18 @@ class MaterialContentType(Enum):
     HOUSEHOLD_REGISTER = "户口"
     HOUSE_FLOOR_PLAN = "房屋平面图"
     REAL_ESTATE_APPLICATION = "不动产调查登记申请表"
+    UNKNOWN = "Unknown"
+
+    def get_text_format(self):
+        return self.name
+
+
+class MaterialType(Enum):
+    ID_CARD = "身份证"
+    LAND_MAP = "宗地图"
+    HOUSEHOLD_REGISTER = "户口本"
+    HOUSE_FLOOR_PLAN = "房屋平面图"
+    REAL_ESTATE_APPLICATION = "不动产申请表"
     UNKNOWN = "Unknown"
 
     def get_text_format(self):

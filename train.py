@@ -22,14 +22,13 @@ from enums import DetectionAlgorithm, TaskType, TaskInfoKey, ModelSource, TaskTy
 from extensions import DetectionTaskManager, TrainingTaskManager
 
 from moudules.YOLO.ultralytics_yolov5_master.train_wrapper import yolo_train_wrapper as yolo_handler
-from moudules.paddle import train_wrapper as paddle_wrapper
-from moudules.Mask_RCNN import train_wrapper as maskrcnn_wrapper
-from moudules.Resnet import train as resnet_wrapper
+from moudules.paddle.train_wrapper import paddle_train_wrapper as paddle_wrapper
+from moudules.Mask_RCNN.train_wrapper import maskrcnn_wrapper as maskrcnn_wrapper
+from moudules.Resnet.train import start as resnet_wrapper
 
-# 创建参数解析器
+
+secret_key = b'YourSecretKey123'
 parser = argparse.ArgumentParser(description='Description of your script')
-
-# 添加需要的参数
 parser.add_argument('--task_id', type=str, help='ID of the detect task')
 parser.add_argument('--model', type=str, default='YOLO', choices=['YOLO', 'Mask_RCNN', 'PaddleOCR', 'Resnet'],
                     help='Detection algorithm (default: Tesseract)')
@@ -38,9 +37,7 @@ parser.add_argument('--dataset', type=str, help='Name of the dataset')
 parser.add_argument('--epoch', type=int, default=100, help='Number of epochs (default: 100)')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch size (default: 32)')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate value (default: 0.001)')
-
-secret_key = b'YourSecretKey123'
-
+args = parser.parse_known_args()[0]
 
 def async_conn_db():
     """
@@ -160,6 +157,8 @@ async def async_download(task_id, grid_save_name, detect_temp_path):
 
 
 def main():
+    # 创建参数解析器
+
     task_id = str(uuid.uuid4())  # 生成唯一的任务ID
     create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     epoch = 2
@@ -176,7 +175,7 @@ def main():
     task_obj.create_task(task_id, username, model, dataset, epoch, batch_size, learning_rate, create_time)
     task_obj.close()
     """
-    args = parser.parse_args()
+
     task_id = args.task_id
     epoch = args.epoch
     batch_size = args.batch_size

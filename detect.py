@@ -32,9 +32,7 @@ from moudules.paddle_default import handler as paddle_handler
 
 from log_handler import logger
 from config import MONGODB_SERVERS, replicaSet, TEMP_STORAGE_DIR
-from extensions import DetectionTaskManager
-
-
+from extensions import DetectionTaskManager, DetectionFileManager
 
 
 secret_key = b'YourSecretKey123'
@@ -176,19 +174,30 @@ class AsyncGridFSManager(MongoDBManager):
             chunk_id = version['_id']
             await self.fs.delete(chunk_id)
             
-            
 
-async def async_download(task_id,grid_save_name, detect_temp_path):
+async def async_download(task_id, zip_name, grid_name, detect_temp_path):
     if not os.path.exists(detect_temp_path):
         gridfs_manager = AsyncGridFSManager()
-        await gridfs_manager.download_file(task_id, grid_save_name, detect_temp_path)
-           
-            
+        file_obj = DetectionFileManager()
+        while True:
+            file_doc = file_obj.get_file(zip_name, task_id)
+            print(file_doc)
+            if file_doc.get("num") == file_doc.get("total_chunk"):
+                print("!!!!chunk number done", file_doc.get("total_chunk"))
+
+                await gridfs_manager.download_file(task_id, grid_name, detect_temp_path)
+                break
+            else:
+                print("!!!!chunk number", file_doc.get("total_chunk"))
+                update_task_info(task_id, TaskInfoKey.LOG.value, f"waiting ..")
+            sleep(1)
+
+
 def main():
     args = parser.parse_args()
     # For test 
     task_id = args.task_id
-#     task_id = str(uuid.uuid4())  # 生成唯一的任务ID
+#     task_id = str(uuid.uuid4())
     create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     model = args.model
     node = args.node
@@ -197,7 +206,6 @@ def main():
     # task_obj = DetectionTaskManager()
     # task_obj.create_task(task_id, "18310703270", model , 'detect_demo1.zip', create_time)
     # task_obj.close()
-
 
     if not args.task_id:
         raise ValueError("no task id")
@@ -213,24 +221,24 @@ def main():
     zip_name = task_info.get("detect_file")
     detect_temp_path = os.path.join(TEMP_STORAGE_DIR, zip_name)
 
-    download_result = asyncio.run(async_download(task_id, f'{task_id}_{zip_name}', detect_temp_path))
+    download_result = asyncio.run(async_download(task_id, zip_name, f'{task_id}_{zip_name}', detect_temp_path))
     update_task_info(task_id, TaskInfoKey.LOG.value, f"Starting Unzipping: {zip_name}")
     detect_floder = decompress_zip(task_id, detect_temp_path)
 
 #     res = handler(detect_floder, task_id, node)
-    
-    logger.info(f"Starting Unzipping: {zip_name}")
-    update_task_info(task_id, TaskInfoKey.LOG.value, f"Starting Unzipping: {zip_name}")
-    detect_floder = decompress_zip(task_id, detect_temp_path)
 
-    print(model, detect_floder)
+    # logger.info(f"Starting Unzipping: {zip_name}")
+    # update_task_info(task_id, TaskInfoKey.LOG.value, f"Starting Unzipping: {zip_name}")
+    # detect_floder = decompress_zip(task_id, detect_temp_path)
 
-#     if model == DetectionAlgorithm.TESSERACT.value:
-#         res = pydetect_loop(task_id, uncompress_file_path)
+    # print(model, detect_floder)
+
+    # if model == DetectionAlgorithm.TESSERACT.value:
+    #     res = pydetect_loop(task_id, uncompress_file_path)
 
     if model == DetectionAlgorithm.YOLO.value:
         res = yolo_handler(detect_floder, task_id, node)
-        
+
     elif model == DetectionAlgorithm.MaskRCNN.value:
         res = maskrcnn_handler(detect_floder, task_id, node)
 

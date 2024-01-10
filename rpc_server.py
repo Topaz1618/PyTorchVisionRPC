@@ -35,8 +35,8 @@ def get_task_info(task_id):
 def kill_processes(pids):
     for pid in pids:
         proc = psutil.Process(pid)
-        for p_clild in proc.children(recursive=True):
-            p_clild.kill()
+        for p_child in proc.children(recursive=True):
+            p_child.kill()
 
         proc.kill()
 

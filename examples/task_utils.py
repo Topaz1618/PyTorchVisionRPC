@@ -1,22 +1,14 @@
-import os
 import uuid
 import redis
-import random
 import json
-import shutil
+
 from time import time, sleep
 from datetime import datetime
 
-import pdfplumber
-import pytesseract
-import cv2
-import torch
-import numpy as np
 
-from enums import TaskType, TaskStatus, WorkerConnectionStatus, TaskKeyType, TaskInfoKey, MaterialContentType, MaterialType
+from enums import TaskType, TaskStatus, WorkerConnectionStatus, TaskKeyType, TaskInfoKey
 from config import (USED_DETECT_NODES, USED_TRAINING_NODES, DETECT_TASK_QUEUE, TRAINING_TASK_QUEUE,
                     REDIS_HOST, REDIS_PORT)
-from log_handler import logger
 
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
 # redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True, readonly=False)
@@ -280,73 +272,9 @@ def generate_training_task_command(task_id, node):
         return None
 
 
-def pre_process(task_id, images_path, preprocess_dir):
-    if os.path.exists(preprocess_dir):
-        shutil.rmtree(preprocess_dir)
-
-    os.makedirs(preprocess_dir)
-
-    res_dict = dict()
-    file_list = os.listdir(images_path)
-    file_count = len(file_list)
-    logger.info(f"Start Preprocessing ...")
-    update_task_info(task_id, TaskInfoKey.LOG.value, f"Start Preprocessing ...")
-    update_task_info(task_id, TaskInfoKey.TOTAL_FILE_COUNT.value, file_count)
-
-    for idx, filename in enumerate(file_list):
-        file_extension = filename.split(".")[-1]
-        file_name = filename.split(".")[0]
-        res_dict[filename] = {"file_type": file_extension.upper()}
-
-        detection_type_list = ["pdf", "png", "jpg", "jpeg"]
-        img_extension_list = ["png", "jpg", "jpeg"]
-        if file_extension not in detection_type_list:
-            continue
-
-        logger.info(f"Preprocessing progress: {idx}/{file_count} ")
-        update_task_info(task_id, TaskInfoKey.LOG.value, f"Preprocessing progress: {idx}/{file_count}")
-        if file_extension in img_extension_list:
-            shutil.copy(os.path.join(images_path, filename), os.path.join(preprocess_dir, f"{file_name}_page_0.png"))
-        else:
-
-            with pdfplumber.open(os.path.join(images_path, filename)) as pdf:
-                for page_num, page in enumerate(pdf.pages):
-                    img = page.to_image()
-
-                    ocr_text = pytesseract.image_to_string(img.original, lang='chi_sim')
-                    if MaterialContentType.ID_CARD.value in ocr_text:
-                        material_type = MaterialType.ID_CARD.value
-
-                    elif MaterialContentType.LAND_MAP.value in ocr_text or MaterialContentType.LAND_MAP_AREA.value in ocr_text:
-                        material_type = MaterialType.LAND_MAP.value
-
-                    elif MaterialContentType.ID_CARD.value in ocr_text:
-                        material_type = MaterialType.ID_CARD.value
-
-                    elif MaterialContentType.HOUSE_FLOOR_PLAN.value in ocr_text:
-                        material_type = MaterialType.HOUSE_FLOOR_PLAN.value
-
-                    elif MaterialContentType.HOUSEHOLD_REGISTER.value in ocr_text:
-                        material_type = MaterialType.HOUSEHOLD_REGISTER.value
-
-                    elif MaterialContentType.REAL_ESTATE_APPLICATION.value in ocr_text:
-                        material_type = MaterialType.REAL_ESTATE_APPLICATION.value
-
-                    else:
-                        material_type = MaterialType.UNKNOWN.value
-
-                    if not res_dict[filename].get("material_type"):
-                        res_dict[filename]["material_type"] = material_type
-
-                    pdf_image = page.to_image().original
-
-                    open_cv_image = cv2.cvtColor(np.array(pdf_image), cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(os.path.join(preprocess_dir, f"{file_name}_page_{page_num}.png"), open_cv_image)
-
-    return res_dict
-
 
 def generate_task_command(task_id, node, task_type):
+
     if task_type == TaskType.DETECT.value:
 
         res = generate_detect_task_command(task_id, node)

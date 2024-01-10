@@ -1,29 +1,21 @@
 import os
-import torch
 import sys
+import uuid
 import random
-import shutil
+from datetime import datetime
 
 import cv2
 import torch
-import pdfplumber
-
 import numpy as np
-from pathlib import Path
-
-# from YOLO.ultralytics_yolov5_master.models.experimental import attempt_load
-# from models.experimental import attempt_load
-
 
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(parent_dir)
 current_directory = os.getcwd()
 
 
-from enums import FileFormatType, MaterialType, MaterialTitleType, TaskStatus, TaskInfoKey
-from task_utils import update_task_info, get_task_info, pre_process
+from enums import MaterialContentType, MaterialType, MaterialTitleType, TaskStatus, TaskInfoKey, TrainModelType, TaskType
+from task_utils import update_task_info, get_task_info, create_task, pre_process
 from log_handler import logger
-from extensions import DetectionTaskManager
 
 
 def predict_image_class(task_id, images_path, preprocess_dir, model, res_dict):
@@ -101,9 +93,9 @@ def handler(detect_floder, task_id, node):
     cache_dir = 'YOLO'
     torch.hub.set_dir(cache_dir)
 
-    model_weights_path = 'moudules/YOLO/ultralytics_yolov5_master/yolov5s.pt'
+    model_weights_path = '../moudules/YOLO/ultralytics_yolov5_master/yolov5s.pt'
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = torch.hub.load('moudules/YOLO/ultralytics_yolov5_master', 'yolov5s',
+    model = torch.hub.load('../moudules/YOLO/ultralytics_yolov5_master', 'yolov5s',
                            source='local')  # or yolov5m, yolov5l, yolov5x, custom
     model.eval()
 
@@ -123,13 +115,21 @@ def handler(detect_floder, task_id, node):
     update_task_info(task_id, TaskInfoKey.LOG.value, f"Detection Task: [{task_id}] Already Completed!")
     update_task_info(task_id, TaskInfoKey.STATUS.value, TaskStatus.COMPLETED.value)
 
-    task_obj = DetectionTaskManager()
-    task_obj.update_task(task_id, TaskInfoKey.RESULT.value, res)
-    task_obj.update_task(task_id, "task_status", TaskStatus.COMPLETED.value)
-    task_obj.close()
+    print(res)
 
     return True
 
+
+if __name__ == "__main__":
+    detect_floder = "detect_demo"
+    task_id = str(uuid.uuid4())  # 生成唯一的任务ID
+    create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    model = TrainModelType.RESNET.value
+    node = "worker1"
+    dataset = "coco"
+
+    task = create_task(task_id, TaskType.DETECT.value, create_time, model, 'detect_demo1.zip')
+    handler(detect_floder, task_id, node)
 
 
 

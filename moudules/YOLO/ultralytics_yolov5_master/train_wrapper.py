@@ -79,7 +79,7 @@ from extensions import TrainingTaskManager
 from enums import TaskInfoKey, TaskStatus
 
 
-def parse_opt(known=False):
+def parse_opt(known=True):
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default=ROOT / 'yolov5s.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')

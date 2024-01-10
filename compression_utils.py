@@ -61,7 +61,6 @@ def decompress_zip(task_id, zip_file_path):
     """
 
     folder_name = zip_file_path.split("/")[-1].split(".zip")[0]
-    print("!!folder_name", folder_name)
     res_path = os.path.join(TEMP_STORAGE_DIR, folder_name)
 
     if not os.path.exists(res_path):
@@ -81,6 +80,5 @@ def decompress_zip(task_id, zip_file_path):
                     shutil.copyfileobj(origin_file, output_file)  # 将原文件内容复制到新文件
             print(f"解压文件  {right_fn} 完成")
             update_task_info(task_id, TaskInfoKey.LOG.value, f"解压文件  {right_fn} 完成")
-
 
     return res_path

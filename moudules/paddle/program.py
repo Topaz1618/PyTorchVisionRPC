@@ -68,7 +68,8 @@ class ArgsParser(ArgumentParser):
         )
 
     def parse_args(self, argv=None):
-        args = super(ArgsParser, self).parse_args(argv)
+        # args = super(ArgsParser, self).parse_args(argv)
+        args = super(ArgsParser, self).parse_known_args(argv)[0]
         assert args.config is not None, \
             "Please specify --config=configure_file_path."
         args.opt = self._parse_opt(args.opt)
